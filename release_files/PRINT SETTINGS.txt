@@ -1,0 +1,23 @@
+EXACT 90 x 57 mm CARD — RECOMMENDED PRINT SETTINGS
+==================================================
+
+ADOBE ACROBAT READER
+- Page Sizing & Handling: Actual size
+- Scale: 100%
+- Choose paper source by PDF page size: ON
+- Orientation: Auto portrait/landscape
+- Do not use Fit or Shrink oversized pages
+
+EPSON L805 — 4 x 6
+- Paper Source: Rear Paper Feed
+- Document Size: 10 x 15 cm (4 x 6 in)
+- Output Paper: Same as Document Size
+- Reduce/Enlarge Document: OFF
+- Borderless: OFF for predictable exact geometry
+- Orientation: Portrait
+- Paper Type: Select the paper actually loaded
+- Quality: High / Photo according to paper
+
+If physical output still shifts without changing size, use PRINT POSITION in
+Maha ID Studio and save an Epson L805 profile. Change only X/Y position; keep
+the PDF and Adobe print scale at 100%.

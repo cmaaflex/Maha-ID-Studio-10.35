@@ -1,0 +1,6 @@
+Pillow>=10.0
+PyMuPDF>=1.24
+numpy>=1.26
+opencv-python>=4.10
+pywin32>=306; platform_system == "Windows"
+pyinstaller>=6.0; platform_system == "Windows"
