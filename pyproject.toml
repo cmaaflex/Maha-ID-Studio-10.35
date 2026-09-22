@@ -1,0 +1,8 @@
+[project]
+name = "seema-digital-maha-id-studio"
+version = "10.35"
+description = "SEEMA DIGITAL Maha ID crop, preview and exact-size print studio"
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

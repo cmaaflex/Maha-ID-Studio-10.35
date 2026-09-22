@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+build/
+dist/
+*.spec
+installer/output/
+installer/installer_assets/
+customer_release/
+*-ready.json
+*.log
