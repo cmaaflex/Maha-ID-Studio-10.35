@@ -1,0 +1,16 @@
+EXACT 90 x 57 mm CARD — RECOMMENDED PRINT SETTINGS
+==================================================
+
+MAHA ID SOFTWARE 10.35
+- Choose any Windows-supported printer: Canon, Epson, HP, Brother, Kyocera, PDF printer, or another installed device.
+- Choose paper and orientation in the Print window. The selected layout never forces a printer paper size.
+- Confirm the live summary shows the intended printer, paper, orientation, layout, Card Size 90 × 57 mm LOCKED, and Exact Physical Size.
+- PRINT NOW — EXACT 90 × 57 mm preserves the physical card size.
+- If the arrangement cannot fit inside the printer's reported printable area, printing is blocked with a clear warning. It is never silently shrunk.
+- Use printer calibration only to correct measured X/Y position or size variation, then save the profile for that printer.
+
+PRINTING AN EXPORTED PDF
+- Page Sizing & Handling: Actual size
+- Scale: 100%
+- Orientation: Match the exported page
+- Do not use Fit, Shrink, or Scale to printable area

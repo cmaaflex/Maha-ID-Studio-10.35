@@ -1,0 +1,35 @@
+SEEMA DIGITAL — MAHA ID SOFTWARE 10.35
+====================================
+
+INSTALLATION
+1. Run "MAHA ID SOFTWARE 10.35 Setup.exe".
+2. Keep the Desktop shortcut option selected and click Install.
+3. Open Maha ID Studio from Desktop or Start Menu.
+4. No BAT, VBS, Python or CMD file is required.
+
+QUICK WORKFLOW
+1. Select SINGLE 4×6, MULTIPLE 4×6, A4 ME 4 COMPLETE CARDS, A4 ME 5 COMPLETE CARDS, A4 ME 10 CARD — ONLY FRONT, or A4 ME 10 CARD — ONLY BACK.
+2. Select PDF/JPG/PNG/TIFF/SVG/DOCX/XLSX/PPTX/ZIP/HTML/TXT/CSV files. Office/text files must contain a readable embedded/local image.
+3. Check Front, Back and Photo in the large live-preview panel.
+4. Use EDIT CROP + ENHANCEMENT when correction is required.
+5. Crop controls: Ctrl + Mouse Wheel = Zoom; Space + Left Drag = Pan; Arrow keys = Move.
+6. Click APPLY CROP / CHANGES after crop correction.
+7. Click APPLY ENHANCEMENTS after brightness/colour correction.
+8. Use Ctrl+Z for Undo and Ctrl+Y for Redo.
+9. Use SAVE SELECTED PDF / SAVE ALL PDF to choose your own folder and filename.
+10. In Print, choose the installed Windows printer, paper size and orientation you want. The home layout never changes the selected printer paper.
+11. Check the live summary and print only after validation passes. The card remains exactly 90 × 57 mm; an arrangement that does not fit is blocked instead of silently shrinking.
+12. 4 CARD A4 me har page par 4 locked front+back pairs aate hain. Horizontal/Vertical sliders se card-pairs ka gap set karein; AUTO FIT safe layout restore karta hai.
+13. A4 list me P1-01, P1-02 aur P2-01 se clear hota hai ki card kis A4 page par jayega.
+
+IMPORTANT
+- Final card size is exactly 90 x 57 mm. JPG/PDF export uses maximum-quality 600 DPI rendering.
+- The standalone "MAHA ID SOFTWARE 10.35.exe" is portable and can run without installation.
+- If Windows SmartScreen appears, click More info > Run anyway only when this file was received directly from SEEMA DIGITAL.
+
+SUPPORT
+SEEMA DIGITAL, Kannad
+Email: cmaaflex@gmail.com
+Instagram: @seemadigital9
+Address: Near Panchayat Samiti Quarter, Bus Stand Road, Kannad,
+Aurangabad, Maharashtra - 431103
