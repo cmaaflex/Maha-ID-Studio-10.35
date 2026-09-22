@@ -1,23 +1,16 @@
 EXACT 90 x 57 mm CARD — RECOMMENDED PRINT SETTINGS
 ==================================================
 
-ADOBE ACROBAT READER
+MAHA ID SOFTWARE 10.35
+- Choose any Windows-supported printer: Canon, Epson, HP, Brother, Kyocera, PDF printer, or another installed device.
+- Choose paper and orientation in the Print window. The selected layout never forces a printer paper size.
+- Confirm the live summary shows the intended printer, paper, orientation, layout, Card Size 90 × 57 mm LOCKED, and Exact Physical Size.
+- PRINT NOW — EXACT 90 × 57 mm preserves the physical card size.
+- If the arrangement cannot fit inside the printer's reported printable area, printing is blocked with a clear warning. It is never silently shrunk.
+- Use printer calibration only to correct measured X/Y position or size variation, then save the profile for that printer.
+
+PRINTING AN EXPORTED PDF
 - Page Sizing & Handling: Actual size
 - Scale: 100%
-- Choose paper source by PDF page size: ON
-- Orientation: Auto portrait/landscape
-- Do not use Fit or Shrink oversized pages
-
-EPSON L805 — 4 x 6
-- Paper Source: Rear Paper Feed
-- Document Size: 10 x 15 cm (4 x 6 in)
-- Output Paper: Same as Document Size
-- Reduce/Enlarge Document: OFF
-- Borderless: OFF for predictable exact geometry
-- Orientation: Portrait
-- Paper Type: Select the paper actually loaded
-- Quality: High / Photo according to paper
-
-If physical output still shifts without changing size, use PRINT POSITION in
-Maha ID Studio and save an Epson L805 profile. Change only X/Y position; keep
-the PDF and Adobe print scale at 100%.
+- Orientation: Match the exported page
+- Do not use Fit, Shrink, or Scale to printable area

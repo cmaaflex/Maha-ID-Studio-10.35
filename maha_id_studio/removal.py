@@ -26,17 +26,18 @@ class Candidate:
     key:str=''
     value:str=''
     view:int=0
+    signature:str=''
 
 def registry():
     import winreg
     return winreg
 
 def safe_child(folder,path):
-    folder=Path(folder);path=Path(path)
+    folder=Path(os.path.abspath(folder));path=Path(os.path.abspath(path))
     if not folder.is_absolute() or folder.parent==folder:return False
     try:
-        if folder.resolve()!=folder.absolute():return False
-        if not path.absolute().is_relative_to(folder.absolute()) or path.absolute()==folder.absolute():return False
+        if folder.is_symlink() or getattr(folder,'is_junction',lambda:False)():return False
+        if not path.is_relative_to(folder) or path==folder:return False
         part=path
         while part!=folder:
             if part.is_symlink() or getattr(part,'is_junction',lambda:False)():return False
@@ -114,7 +115,7 @@ def scan(app,mode='Safe',settings=False,prefetch=False,cancelled=None):
         if cancelled and cancelled.is_set():notes.append('Scan cancelled; list is incomplete.');break
         try:
             if path.is_file() and safe_child(path.parent,path):
-                st=path.stat();found.append(Candidate('File',str(path),st.st_size,datetime.datetime.fromtimestamp(st.st_mtime).strftime('%Y-%m-%d %H:%M')))
+                st=path.stat();found.append(Candidate('File',str(path),st.st_size,datetime.datetime.fromtimestamp(st.st_mtime).strftime('%Y-%m-%d %H:%M'),signature=f'{st.st_mtime_ns}:{st.st_ctime_ns}'))
         except OSError as e:notes.append(str(e))
     if not cancelled or not cancelled.is_set():
         try:found+=registry_candidates(app,mode=='Advanced')

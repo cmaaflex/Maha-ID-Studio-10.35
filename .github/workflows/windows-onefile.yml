@@ -95,14 +95,29 @@ jobs:
           Copy-Item "installer/output/MAHA ID SOFTWARE 10.35 Setup.exe" "customer_release/MAHA ID STUDIO/"
           Copy-Item "dist/MAHA ID SOFTWARE 10.35.exe" "customer_release/MAHA ID STUDIO/"
           Copy-Item "dist/MAHA ID SOFTWARE 10.35 Remover.exe" "customer_release/MAHA ID STUDIO/"
-          Copy-Item "release_files/HOW TO USE.txt" "customer_release/MAHA ID STUDIO/"
-          Copy-Item "release_files/PRINT SETTINGS.txt" "customer_release/MAHA ID STUDIO/"
+          @'
+          MAHA ID SOFTWARE 10.35 — HOW TO USE
+          1. Run Setup.exe, or open the portable EXE.
+          2. Choose a layout and add files. No page or card is selected automatically.
+          3. Review Front, Back and Photo. Re-detect or adjust the green photo boundary when required, then confirm it.
+          4. Choose any installed Windows printer, paper and orientation in Print.
+          5. Check the live summary and print only after validation passes.
+          Final card size stays exactly 90 × 57 mm. An arrangement that does not fit is blocked instead of silently shrinking.
+          '@ | Set-Content "customer_release/MAHA ID STUDIO/HOW TO USE.txt" -Encoding UTF8
+          @'
+          EXACT 90 × 57 mm PRINT SETTINGS
+          - Choose the intended installed Windows printer, paper and orientation.
+          - Confirm the live summary shows Card Size 90 × 57 mm LOCKED and Exact Physical Size.
+          - The selected home layout never forces printer paper size.
+          - Use calibration only to correct measured printer variation.
+          - For exported PDFs use Actual Size / 100%; never Fit or Shrink.
+          '@ | Set-Content "customer_release/MAHA ID STUDIO/PRINT SETTINGS.txt" -Encoding UTF8
           Copy-Item "release_files/Seema Digital Logo.png" "customer_release/MAHA ID STUDIO/"
           Copy-Item "release_files/Seema Digital Splash.jpg" "customer_release/MAHA ID STUDIO/"
           $appHash = (Get-FileHash "dist/MAHA ID SOFTWARE 10.35.exe" -Algorithm SHA256).Hash
           $setupHash = (Get-FileHash "installer/output/MAHA ID SOFTWARE 10.35 Setup.exe" -Algorithm SHA256).Hash
           @"
-          SEEMA DIGITAL â€” MAHA ID SOFTWARE 10.35
+          SEEMA DIGITAL - MAHA ID SOFTWARE 10.35
           Windows 10/11 x64
 
           Maha ID Studio.exe SHA-256: $appHash
