@@ -1238,8 +1238,7 @@ class BatchReview:
         action_control(nav_group,"FIRST CARD","Pehle Card Par Jaayein",lambda:self.step(-len(self.items)))
         action_control(nav_group,"LAST CARD","Aakhri Card Par Jaayein",lambda:self.step(len(self.items)))
         output_outer,output_group=action_group(primary,"JPG OUTPUT");output_outer.pack(side="left",fill="both",expand=True,padx=3)
-        action_control(output_group,"SAVE FINAL OUTPUT","Save As JPG / JPEG / PNG / TIFF / BMP / WEBP / PDF",self.save)
-        action_control(output_group,"EXPORT QUALITY SETTINGS","Dpi Aur Quality Select Karein",self.choose_export_quality)
+        action_control(output_group,"SAVE FINAL OUTPUT","Output format aur DPI isi dialog me select karein",self.save)
 
         layout_tools=Frame(command_panel,bg=THEME["bg"])
         position_outer,position_group=action_group(layout_tools,"CARD POSITION & ROTATION")
@@ -1286,6 +1285,10 @@ class BatchReview:
             if mode!="4x6" and n%per_page==0:self.list.insert("end",f"══ A4 PAGE {n//per_page+1} ══");self.list.itemconfigure("end",fg=THEME["cyan"],selectbackground=THEME["panel_alt"])
             row=self.list.size();position=f"P{n//per_page+1}-{n%per_page+1:02d}" if mode!="4x6" else f"4×6-{n+1:02d}";label=item.get("source_label",item["path"].name);display=label if len(label)<=34 else label[:31]+"…";self.list.insert("end",f"{position}  {display}");self.list_row_to_item[row]=n;self.item_to_list_row[n]=row
         self.list.bind("<<ListboxSelect>>",self.select)
+        # Open each review window on the first actual card; page separator
+        # rows are skipped and the user can still press CLEAR SELECTION.
+        if self.items and 0 in self.item_to_list_row:
+            self.list.selection_set(self.item_to_list_row[0]);self.list.see(self.item_to_list_row[0]);self.has_selection=True
         Button(left_column,text="CLEAR SELECTION",command=self.clear_selection).pack(fill="x")
         compact_outer,compact_group=action_group(left_column,"POSITION & ROTATION");compact_outer.pack(fill="x",pady=(6,2))
         def compact_action(title,help_text,command):
@@ -1308,12 +1311,6 @@ class BatchReview:
         Label(side,text="SELECTED CARD PREVIEW — FULL 90×57 MM",font=("Segoe UI",13,"bold"),fg=THEME["cyan"],bg=THEME["panel"]).pack(pady=(0,3));self.preview_name=StringVar();Label(side,textvariable=self.preview_name,font=("Segoe UI",9,"bold"),fg=THEME["text"],bg=THEME["panel"],wraplength=side_width-25).pack(pady=(0,5))
         self.photo_confidence_text=StringVar(value="PHOTO DETECTION: CHECKING");self.photo_confidence_label=Label(side,textvariable=self.photo_confidence_text,font=("Segoe UI",11,"bold"),fg=THEME["green"],bg=THEME["panel"])
         if mode not in ("a4","a4back"):self.photo_confidence_label.pack(fill="x",pady=(0,5))
-        detect_actions=Frame(side,bg=THEME["panel"])
-        if mode not in ("a4","a4back"):detect_actions.pack(fill="x",pady=(0,5))
-        action_control(detect_actions,"RE-DETECT FRONT","Front Border Dobara Detect Karein",lambda:self.redetect_card("front"))
-        action_control(detect_actions,"RE-DETECT BACK","Back Border Dobara Detect Karein",lambda:self.redetect_card("back"))
-        action_control(detect_actions,"RE-DETECT PHOTO","Selected Photo Dobara Detect Karein",self.redetect_photo)
-        action_control(detect_actions,"DETECT PHOTOS IN ALL","Sabhi Photos Auto Detect Karein",self.redetect_all_photos)
         self.preview_target="back" if mode=="a4back" else "front" if mode=="a4" else "photo";self.preview_zoom=1.0;tabs=Frame(side,bg=THEME["panel"]);tabs.pack(fill="x",pady=(0,6));self.preview_tab_buttons={}
         preview_tabs=(("BACK  [B]","back"),) if mode=="a4back" else (("FRONT  [F]","front"),) if mode=="a4" else (("FRONT  [F]","front"),("BACK  [B]","back"),("PHOTO  [P]","photo"))
         for name,key in preview_tabs:
@@ -1328,7 +1325,7 @@ class BatchReview:
         thumbnails=Frame(side,bg=THEME["panel"]);thumbnails.pack(fill="x");self.batch_preview_labels={}
         thumbnail_types=(("back",THEME["cyan"]),) if mode=="a4back" else (("front",THEME["red"]),) if mode=="a4" else (("front",THEME["red"]),("back",THEME["cyan"]),("photo",THEME["green"]))
         for name,color in thumbnail_types:
-            cell=Frame(thumbnails,bg=THEME["panel"]);cell.pack(side="left",fill="x",expand=True,padx=2);Label(cell,text=name.upper(),fg=color,font=("Segoe UI",8,"bold"),bg=THEME["panel"]).pack();label=Label(cell,bg="#20242b",bd=1,relief="groove",cursor="hand2");label.pack(fill="x");label.bind("<Button-1>",lambda _event,value=name:self.select_preview_tab(value));self.batch_preview_labels[name]=label
+            cell=Frame(thumbnails,bg=THEME["panel"]);cell.pack(side="left",fill="x",expand=True,padx=2);Label(cell,text=name.upper(),fg=color,font=("Segoe UI",9,"bold"),bg=THEME["panel"]).pack();label=Label(cell,bg="#20242b",bd=1,relief="groove",cursor="hand2",height=7);label.pack(fill="x");label.bind("<Button-1>",lambda _event,value=name:self.select_preview_tab(value));self.batch_preview_labels[name]=label
         zoom=Frame(side,bg=THEME["panel"]);zoom.pack(fill="x",pady=6)
         for text,value in (("Fit",1.0),("100%",1.35),("Zoom +",.15),("Zoom −",-.15)):Button(zoom,text=text,command=lambda v=value,t=text:self.set_preview_zoom(v,t)).pack(side="left",fill="x",expand=True,padx=2)
         edit_button=Button(side,text="EDIT SELECTED CARD",command=self.edit);edit_button._cinematic_size=11;edit_button.pack(fill="x",pady=(2,0));self.selection_buttons.append(edit_button)
@@ -1450,7 +1447,7 @@ class BatchReview:
         for name,label in self.batch_preview_labels.items():
             key=(name,id(item[name]));image=self.preview_cache.get(key)
             if image is None:
-                image=item[name].copy().convert("RGB");image.thumbnail((145,84),Image.Resampling.BILINEAR);self.preview_cache[key]=image
+                image=item[name].copy().convert("RGB");image.thumbnail((220,130),Image.Resampling.BILINEAR);self.preview_cache[key]=image
             preview=ImageTk.PhotoImage(image);self.batch_preview_images[name]=preview;label.configure(image=preview)
         large=item[self.preview_target].copy().convert("RGB");available_w=max(40,self.main_preview_label.winfo_width()-12);available_h=max(40,self.main_preview_label.winfo_height()-12);large.thumbnail((round(available_w*self.preview_zoom),round(available_h*self.preview_zoom)),Image.Resampling.LANCZOS);self.batch_preview_images["large"]=ImageTk.PhotoImage(large);self.main_preview_label.configure(image=self.batch_preview_images["large"])
         for name,button in self.preview_tab_buttons.items():button._cinematic_selected=name==self.preview_target;button.configure(bg=THEME["red"] if name==self.preview_target else getattr(button,"_cinematic_bg",THEME["panel_alt"]))
