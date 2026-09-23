@@ -77,7 +77,7 @@ def apply_cinematic_theme(window):
                 elif name=="Button":
                     bg,active=_button_colours(child.cget("text"))
                     size=getattr(child,"_cinematic_size",11)
-                    child.configure(bg=bg,fg=THEME["text"],activebackground=active,activeforeground="white",relief="flat",bd=0,highlightthickness=0,cursor="hand2",font=("Segoe UI",size),padx=8,pady=5)
+                    child.configure(bg=bg,fg=THEME["text"],activebackground=active,activeforeground="white",relief="raised",bd=1,highlightthickness=1,highlightbackground=THEME["border"],highlightcolor=THEME["cyan"],overrelief="groove",cursor="hand2",font=("Segoe UI",size,"bold"),padx=8,pady=6)
                     child._cinematic_bg=bg
                     child.bind("<Configure>",lambda e,w=child:w.configure(wraplength=max(80,e.width-20)))
                     if not hasattr(child,"_cinematic_selected"):child._cinematic_selected=False
@@ -1432,7 +1432,11 @@ class BatchReview:
         if not self.items or self.canvas.winfo_width()<20:return
         for button in self.selection_buttons:button.configure(state="normal" if self.has_selection else "disabled")
         if not self.has_selection:
-            self.canvas.delete("all");self.canvas.create_text(self.canvas.winfo_width()//2,self.canvas.winfo_height()//2,text="Select a page/card in the list",fill=THEME["muted"])
+            self.canvas.delete("all")
+            w,h=self.canvas.winfo_width(),self.canvas.winfo_height()
+            self.canvas.create_rectangle(18,18,max(18,w-18),max(18,h-18),outline=THEME["border"],fill=THEME["surface"],width=2)
+            self.canvas.create_text(w//2,max(30,h//2-18),text="NO PAGE OR CARD SELECTED",fill=THEME["cyan"],font=("Segoe UI",16,"bold"))
+            self.canvas.create_text(w//2,max(55,h//2+18),text="Select a page/card from the list to preview it",fill=THEME["muted"],font=("Segoe UI",11,"bold"))
             self.main_preview_label.configure(image="");self.preview_name.set("Nothing selected");self.photo_confidence_text.set("");self.card_counter.set("");return
         self.update_photo_confidence()
         full=self.view();self.app.last_print_image=full;image=full.copy();zoom=max(.25,min(3.0,self.page_zoom.get()/100));image.thumbnail((max(40,round((self.canvas.winfo_width()-22)*zoom)),max(40,round((self.canvas.winfo_height()-22)*zoom))),Image.Resampling.LANCZOS);self.view_scale=image.width/full.width;self.view_origin=((self.canvas.winfo_width()-image.width)//2,(self.canvas.winfo_height()-image.height)//2);self.photo=ImageTk.PhotoImage(image);self.canvas.delete("all");self.canvas.create_image(self.canvas.winfo_width()//2,self.canvas.winfo_height()//2,image=self.photo);per_page=5 if self.mode=="a4pair5" else 4 if self.mode=="a4pair4" else 10
@@ -1690,7 +1694,9 @@ class MahaIDApp:
         self._premium_scale=min(usable_w/base.width,usable_h/base.height)
         scaled=(max(1,round(base.width*self._premium_scale)),max(1,round(base.height*self._premium_scale)))
         image=base.resize(scaled,Image.Resampling.LANCZOS);self._premium_offset=((width-scaled[0])//2,(height-scaled[1])//2)
-        background=home_background((width,height));self.home_premium_photo=ImageTk.PhotoImage(background);self.home_premium_art=ImageTk.PhotoImage(image)
+        # Keep the supplied home artwork edge-to-edge behind the centered safe content.
+        background=base.resize((width,height),Image.Resampling.LANCZOS)
+        self.home_premium_photo=ImageTk.PhotoImage(background);self.home_premium_art=ImageTk.PhotoImage(image)
         self.home_canvas.delete("all");self.home_canvas.create_image(0,0,anchor="nw",image=self.home_premium_photo,tags="home_bg");self.home_canvas.create_image(self._premium_offset[0],self._premium_offset[1],anchor="nw",image=self.home_premium_art,tags="home");self._draw_premium_outline()
     def _premium_hit(self,x,y):
         ox,oy=self._premium_offset;scale=self._premium_scale;sx,sy=(x-ox)/scale,(y-oy)/scale

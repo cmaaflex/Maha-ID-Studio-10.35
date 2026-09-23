@@ -99,24 +99,13 @@ def configured_device(name, paper, orientation):
     try:
         info = win32print.GetPrinter(handle, 2)
         mode = info['pDevMode']
-        mode.Fields &= ~(win32con.DM_PAPERLENGTH | win32con.DM_PAPERWIDTH)
-        mode.Fields |= win32con.DM_PAPERSIZE | win32con.DM_ORIENTATION | win32con.DM_SCALE | win32con.DM_COPIES
-        mode.PaperSize = paper.code
-        mode.Orientation = 2 if orientation == 'Landscape' else 1
-        mode.Scale = 100
-        mode.Copies = 1
-        result = win32print.DocumentProperties(0, handle, name, mode, mode, win32con.DM_IN_BUFFER | win32con.DM_OUT_BUFFER)
-        if result < 0 or mode.PaperSize != paper.code or mode.Orientation != (2 if orientation == 'Landscape' else 1) or mode.Scale != 100:
-            raise ValueError('Printer driver rejected the selected paper/orientation/100% scale. No output sent.')
+        # The driver owns paper, orientation, margins, scaling and copies.  Keep
+        # its current DEVMODE untouched so the application never changes the
+        # printer's original Windows preferences behind the user's back.
         dc = win32ui.CreateDCFromHandle(win32gui.CreateDC('WINSPOOL', name, mode))
         device = Device(*(dc.GetDeviceCaps(getattr(win32con, key)) for key in
                           ('LOGPIXELSX', 'LOGPIXELSY', 'PHYSICALWIDTH', 'PHYSICALHEIGHT',
                            'HORZRES', 'VERTRES', 'PHYSICALOFFSETX', 'PHYSICALOFFSETY')))
-        expected = (paper.height_mm, paper.width_mm) if orientation == 'Landscape' else (paper.width_mm, paper.height_mm)
-        actual = (device.width * 25.4 / device.dpi_x, device.height * 25.4 / device.dpi_y)
-        if any(abs(a - b) > 2 for a, b in zip(actual, expected)):
-            dc.DeleteDC()
-            raise ValueError('Printer returned a different physical paper size. Check its driver settings.')
         return dc, device, info.get('Status', 0)
     finally:
         win32print.ClosePrinter(handle)
