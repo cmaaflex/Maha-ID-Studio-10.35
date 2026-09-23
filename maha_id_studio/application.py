@@ -1283,7 +1283,7 @@ class BatchReview:
         self.list.configure(selectmode="extended",exportselection=False);self.list_row_to_item={};self.item_to_list_row={};per_page=5 if mode=="a4pair5" else 4 if mode=="a4pair4" else 10 if mode!="4x6" else len(items)
         for n,item in enumerate(items):
             if mode!="4x6" and n%per_page==0:self.list.insert("end",f"══ A4 PAGE {n//per_page+1} ══");self.list.itemconfigure("end",fg=THEME["cyan"],selectbackground=THEME["panel_alt"])
-            row=self.list.size();position=f"P{n//per_page+1}-{n%per_page+1:02d}" if mode!="4x6" else f"4×6-{n+1:02d}";label=item.get("source_label",item["path"].name);display=label if len(label)<=34 else label[:31]+"…";self.list.insert("end",f"{position}  {display}");self.list_row_to_item[row]=n;self.item_to_list_row[n]=row
+            row=self.list.size();position=f"P{n//per_page+1}-{n%per_page+1:02d}" if mode!="4x6" else f"4×6-{n+1:02d}";label=item.get("source_label",item["path"].name);display=label if len(label)<=30 else label[:27]+"…";verified=item.get("photo_verified_geometry")==photo_geometry(item);badge="VERIFIED" if verified else "NEEDS REVIEW" if needs_photo_review(item) else "AUTO DETECTED";self.list.insert("end",f"{position}  [{badge}]  {display}");self.list.itemconfigure(row,fg=THEME["green"] if verified else THEME["red"] if badge=="NEEDS REVIEW" else THEME["cyan"]);self.list_row_to_item[row]=n;self.item_to_list_row[n]=row
         self.list.bind("<<ListboxSelect>>",self.select)
         # Open each review window on the first actual card; page separator
         # rows are skipped and the user can still press CLEAR SELECTION.
