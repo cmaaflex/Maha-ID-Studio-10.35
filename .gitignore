@@ -8,3 +8,4 @@ installer/installer_assets/
 customer_release/
 *-ready.json
 *.log
+.venv/

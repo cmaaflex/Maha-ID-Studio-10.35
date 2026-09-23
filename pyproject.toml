@@ -1,6 +1,6 @@
 [project]
 name = "seema-digital-maha-id-studio"
-version = "10.35"
+version = "10.36"
 description = "SEEMA DIGITAL Maha ID crop, preview and exact-size print studio"
 requires-python = ">=3.10"
 

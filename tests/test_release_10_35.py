@@ -6,9 +6,9 @@ from maha_id_studio import removal as r, application as app
 class RemovalSafetyTests(unittest.TestCase):
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
-        self.base=Path(self.temp.name);self.folder=self.base/'Maha ID Studio 10.35';self.folder.mkdir()
-        self.exe=self.folder/'MAHA ID SOFTWARE 10.35.exe';self.exe.write_bytes(b'test app')
-        self.target=r.Installation('10.35',self.folder,self.exe)
+        self.base=Path(self.temp.name);self.folder=self.base/'Maha ID Studio 10.36';self.folder.mkdir()
+        self.exe=self.folder/'MAHA ID SOFTWARE 10.36.exe';self.exe.write_bytes(b'test app')
+        self.target=r.Installation('10.36',self.folder,self.exe)
         self.registry=patch.object(r,'registry_candidates',return_value=[]);self.registry.start();self.addCleanup(self.registry.stop)
         self.backup=patch.object(r,'backup_registry',return_value=[]);self.backup.start();self.addCleanup(self.backup.stop)
     def test_only_selected_version_and_personal_files_preserved(self):
@@ -38,15 +38,15 @@ class RemovalSafetyTests(unittest.TestCase):
         old=r.Installation('10.33',self.folder,self.folder/'MAHA ID SOFTWARE 10.33.exe')
         self.assertEqual(r.settings_files(old),[]);self.assertEqual(r.shortcut_files(old),[])
     def test_uninstaller_outside_install_is_rejected(self):
-        target=r.Installation('10.35',self.folder,self.exe,uninstaller='"C:\\Windows\\cmd.exe" /c anything')
+        target=r.Installation('10.36',self.folder,self.exe,uninstaller='"C:\\Windows\\cmd.exe" /c anything')
         self.assertIsNone(r.built_in_uninstaller(target))
     def test_portable_selection_requires_named_exe(self):
-        self.assertEqual(r.portable(self.exe).version,'10.35')
+        self.assertEqual(r.portable(self.exe).version,'10.36')
         with self.assertRaises(ValueError):r.portable(self.base/'unrelated.exe')
     def test_installer_and_settings_are_isolated(self):
         root=Path(app.APP_DIR);setup=(root/'installer/Maha_ID_Studio.iss').read_text(encoding='utf-8')
-        self.assertIn('281D2A77-F8D9-45F3-A579-10350000C0DE',setup)
-        self.assertIn('Maha ID Studio 10.35',setup)
+        self.assertIn('281D2A77-F8D9-45F3-A579-10360000C0DE',setup)
+        self.assertIn('Maha ID Studio 10.36',setup)
         self.assertNotEqual(app.MahaIDApp.get_config_path(None).name,'Maha id settings.json')
 
 if __name__=='__main__':unittest.main()

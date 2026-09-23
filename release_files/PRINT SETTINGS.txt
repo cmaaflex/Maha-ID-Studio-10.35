@@ -1,7 +1,7 @@
 EXACT 90 x 57 mm CARD — RECOMMENDED PRINT SETTINGS
 ==================================================
 
-MAHA ID SOFTWARE 10.35
+MAHA ID SOFTWARE 10.36
 - Choose any Windows-supported printer: Canon, Epson, HP, Brother, Kyocera, PDF printer, or another installed device.
 - Choose paper and orientation in the Print window. The selected layout never forces a printer paper size.
 - Confirm the live summary shows the intended printer, paper, orientation, layout, Card Size 90 × 57 mm LOCKED, and Exact Physical Size.

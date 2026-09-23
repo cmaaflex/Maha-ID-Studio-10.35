@@ -18,7 +18,7 @@ class Release1027Tests(unittest.TestCase):
         source=inspect.getsource(app)
         for required in ("EDIT & ENHANCEMENT","PREVIEW & NAVIGATION","CARD POSITION & ROTATION",
                          "PHOTO NEEDS REVIEW","SAVE PRESET","LOAD PRESET","SAVE CHANGES",
-                         "EXIT WITHOUT SAVING","PHOTO AUTO DETECTED","RE-DETECT PHOTO","RE-DETECT FRONT","RESET ALL SETTINGS","EXPORT QUALITY SETTINGS"):
+                         "EXIT WITHOUT SAVING","PHOTO AUTO DETECTED","RE-DETECT PHOTO","RESET ALL SETTINGS","SAVE FINAL OUTPUT"):
             self.assertIn(required,source)
 
     def test_navigation_and_help_are_separate(self):

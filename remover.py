@@ -9,7 +9,7 @@ BG='#020916';PANEL='#0b1d36';CYAN='#21d8ff';WHITE='#f4f8ff'
 
 class Remover:
     def __init__(self,root):
-        self.root=root;root.title('MAHA ID SOFTWARE 10.35 — Complete Remover');root.geometry('1040x780');root.minsize(780,590);root.configure(bg=BG)
+        self.root=root;root.title('MAHA ID SOFTWARE 10.36 — Complete Remover');root.geometry('1040x780');root.minsize(780,590);root.configure(bg=BG)
         self.events=queue.Queue();self.busy=False;self.cancelled=threading.Event();self.installations=[];self.candidates=[];self.target=None;self.result={};self.folder=None
         self.version=tk.StringVar(master=root,value='');self.mode=tk.StringVar(master=root,value='Safe')
         self.settings=tk.BooleanVar(master=root,value=False);self.prefetch=tk.BooleanVar(master=root,value=False);self.restore=tk.BooleanVar(master=root,value=False)
@@ -157,7 +157,7 @@ def main():
     root=tk.Tk();Remover(root)
     if '--smoke-test' in sys.argv:
         destination=Path(sys.argv[sys.argv.index('--smoke-test')+1])
-        def ready():destination.write_text('{"ready":true,"version":"10.35","remover":true}');root.destroy()
+        def ready():destination.write_text('{"ready":true,"version":"10.36","remover":true}');root.destroy()
         root.after(1200,ready)
     root.mainloop()
 

@@ -27,7 +27,7 @@ def run():
             cards=[item(),item()]
             review=app.BatchReview(instance,cards,('4x6','a4','a4back','a4pair4','a4pair5')[index%5])
             review.window.state('normal');review.window.geometry(size+'+0+0');root.update()
-            assert review.selected_indices()==() and not review.has_selection
+            assert review.selected_indices()==(0,) and review.has_selection
             review.step(1);root.update();review.draw();root.update()
             assert review.selected_indices()==(1,)
             for button in review.selection_buttons:

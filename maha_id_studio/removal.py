@@ -76,14 +76,14 @@ def allowed_files(app):
     return [app.folder/n for n in names]
 
 def settings_files(app):
-    if app.version!='10.35':return []  # Legacy settings are shared by older versions.
+    if app.version!='10.36':return []  # Legacy settings are shared by older versions.
     base=Path(os.environ.get('APPDATA',Path.home()/'AppData/Roaming'))/'Seema Digital'
-    return [base/f'Maha id settings 10.35.{ext}' for ext in ('json','bak','tmp')]
+    return [base/f'Maha id settings 10.36.{ext}' for ext in ('json','bak','tmp')]
 
 def shortcut_files(app):
-    if app.version!='10.35':return []
+    if app.version!='10.36':return []
     roaming=Path(os.environ.get('APPDATA',Path.home()/'AppData/Roaming'))
-    return [Path.home()/'Desktop/Maha ID Studio 10.35.lnk',roaming/'Microsoft/Windows/Start Menu/Programs/SEEMA DIGITAL 10.35/Maha ID Studio.lnk',roaming/'Microsoft/Windows/Start Menu/Programs/SEEMA DIGITAL 10.35/Maha ID Studio Remover.lnk']
+    return [Path.home()/'Desktop/Maha ID Studio 10.36.lnk',roaming/'Microsoft/Windows/Start Menu/Programs/SEEMA DIGITAL 10.36/Maha ID Studio.lnk',roaming/'Microsoft/Windows/Start Menu/Programs/SEEMA DIGITAL 10.36/Maha ID Studio Remover.lnk']
 
 def registry_candidates(app,advanced=False):
     w=registry();result=[]

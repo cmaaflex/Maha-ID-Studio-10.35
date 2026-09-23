@@ -15,6 +15,8 @@ import queue
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import base64
 import zipfile
+import logging
+from logging.handlers import RotatingFileHandler
 from html.parser import HTMLParser
 from urllib.parse import unquote
 from tkinter import BooleanVar, Button, Canvas, Checkbutton, DoubleVar, Entry, Frame, IntVar, Label, Listbox, Scale, Scrollbar, StringVar, Tk, Toplevel, filedialog, messagebox, simpledialog, ttk
@@ -32,7 +34,7 @@ EXPORT_DPI = 600
 IMPORT_EXTENSIONS = {".pdf",".jpg",".jpeg",".png",".tif",".tiff",".psd",".webp",".bmp",".gif",".avif",".svg",".docx",".xlsx",".pptx",".zip",".html",".htm",".txt",".csv"}
 SUPPORTED = [("Universal Maha ID Files", "*.pdf *.jpg *.jpeg *.png *.tif *.tiff *.psd *.webp *.bmp *.gif *.avif *.svg *.docx *.xlsx *.pptx *.zip *.html *.htm *.txt *.csv"), ("PDF Files", "*.pdf"), ("Image Files", "*.jpg *.jpeg *.png *.tif *.tiff *.psd *.webp *.bmp *.gif *.avif *.svg"), ("Office / Archive", "*.docx *.xlsx *.pptx *.zip"), ("All Files", "*.*")]
 ADJUSTMENTS = ("Brightness", "Contrast", "Hue", "Saturation", "Exposure", "Shadows", "Highlights", "Sharpness", "Temperature")
-APP_VERSION = "10.35"
+APP_VERSION = "10.36"
 PRODUCT_NAME = "MAHA ID SOFTWARE"
 
 # One visual system for every workspace and dialog.  These colours are sampled
@@ -529,7 +531,7 @@ def _referenced_local_images(path):
     if not pages:raise ValueError("Readable local/embedded card image nahi mili.")
     return pages
 
-def render_source_pages(path: Path,password=None) -> list[Image.Image]:
+def render_source_pages(path: Path,password=None,cancel_event=None,progress=None) -> list[Image.Image]:
     """Universal safe importer converts every source to common RGB pages."""
     path=Path(path);suffix=path.suffix.lower()
     if suffix not in IMPORT_EXTENSIONS:raise ValueError(f"Unsupported file type: {suffix or 'unknown'}")
@@ -557,9 +559,11 @@ def render_source_pages(path: Path,password=None) -> list[Image.Image]:
         try:
             if not doc.page_count:raise ValueError("PDF me koi page nahi hai.")
             pages=[]
-            for page in doc:
+            for number,page in enumerate(doc,1):
+                if cancel_event and cancel_event.is_set():break
                 pix=page.get_pixmap(matrix=pymupdf.Matrix(300/72,300/72),alpha=False)
                 pages.append(Image.frombytes("RGB",(pix.width,pix.height),pix.samples))
+                if progress:progress(number,doc.page_count)
             return pages
         finally:doc.close()
     return _render_bytes(path.read_bytes(),suffix)
@@ -888,7 +892,7 @@ class FastCropWindow:
         # it directly above the controls avoids hunting between side panels.
         self.preview_images={}
         Label(editor,text="SELECTED PHOTO PREVIEW",font=("Segoe UI",10,"bold"),fg=THEME["green"],bg=THEME["panel"]).pack(fill="x")
-        self.selected_photo_focus=Label(editor,bg="#20242b",bd=2,relief="groove",height=6);self.selected_photo_focus.pack(fill="x",pady=(2,5))
+        self.selected_photo_focus=Label(editor,bg="#20242b",bd=2,relief="groove");self.selected_photo_focus.pack(fill="x",pady=(2,5))
         Label(editor,text="EDIT & ENHANCEMENT",font=("Segoe UI",14,"bold"),fg=THEME["cyan"],bg=THEME["panel"]).pack(fill="x",pady=(0,3))
         self.state=StringVar();self.action_status=StringVar(value="Ready — koi pending change nahi")
         Label(editor,textvariable=self.state,font=("Segoe UI",11,"bold"),fg=THEME["green"],bg=THEME["panel"]).pack()
@@ -910,6 +914,7 @@ class FastCropWindow:
         self.preset_combo=ttk.Combobox(editor,textvariable=self.preset_name,state="readonly",values=("Auto Detect",)+tuple(PRESETS)+tuple(app.read_settings().get("card_presets",{})))
         self.preset_combo.pack(fill="x");self.preset_combo.bind("<<ComboboxSelected>>",self.preset_changed)
         Button(editor,text="SAVE / RENAME PRESET",command=self.save_card_preset).pack(fill="x",pady=3)
+        Button(editor,text="ENHANCEMENT PRESETS — SAVE / LOAD",command=self.enhancement_presets).pack(fill="x",pady=3)
         Button(editor,text="RE-DETECT PHOTO",command=self.redetect_photo).pack(fill="x",pady=3)
         Button(editor,text="CONFIRM PHOTO BOUNDARY",command=self.confirm_photo_boundary).pack(fill="x",pady=3)
         Button(editor,text="PHOTO BOX BATCH TOOLS",command=self.open_photo_box_tools).pack(fill="x",pady=3)
@@ -1162,6 +1167,51 @@ class FastCropWindow:
         settings=self.app.read_settings();settings.setdefault("card_presets",{})[name.strip()]=bounds
         if self.app.write_settings(settings):
             self.preset_combo.configure(values=tuple(self.preset_combo.cget("values"))+(name.strip(),));self.preset_name.set(name.strip())
+    def enhancement_presets(self):
+        """Persist named tonal settings; applying a preset participates in Undo."""
+        dialog=Toplevel(self.window);dialog.title('Enhancement Presets');dialog.transient(self.window);dialog.grab_set()
+        data=self.app.read_settings();presets=data.setdefault('enhancement_presets',{})
+        listing=Listbox(dialog,exportselection=False,font=('Segoe UI',11,'bold'));listing.pack(fill='both',expand=True,padx=12,pady=12)
+        preview=Label(dialog);preview.pack()
+        def refresh():
+            listing.delete(0,'end')
+            for name in sorted(presets):listing.insert('end',name)
+        def selected():
+            return listing.get(listing.curselection()[0]) if listing.curselection() else None
+        def show(_=None):
+            name=selected()
+            if not name:return
+            sample=self.item['page'].crop(self.boxes[self.active]);sample.thumbnail((320,180))
+            preview.image=ImageTk.PhotoImage(adjust_image(sample,presets[name]));preview.configure(image=preview.image)
+        def save():
+            name=simpledialog.askstring('Save Preset','Preset name:',parent=dialog)
+            if not name or not name.strip():return
+            name=name.strip();presets[name]={key:int(value.get()) for key,value in self.adjust_vars.items()}
+            if self.app.write_settings(data):refresh()
+        def load():
+            name=selected()
+            if not name:return
+            self.remember();self.settings[self.active]={**default_adjustments(),**presets[name]};self.load_adjustments();self.update_previews();self.dirty=True;dialog.destroy()
+        def rename():
+            name=selected()
+            if not name:return
+            new=simpledialog.askstring('Rename Preset','New name:',initialvalue=name,parent=dialog)
+            if not new or not new.strip() or new.strip()==name:return
+            if new.strip() in presets:
+                messagebox.showwarning('Preset Exists','Choose a different name.',parent=dialog);return
+            presets[new.strip()]=presets.pop(name)
+            if self.app.write_settings(data):refresh()
+        def delete():
+            name=selected()
+            if name and messagebox.askyesno('Delete Preset',f'Delete {name}?',parent=dialog):
+                del presets[name]
+                if self.app.write_settings(data):refresh();preview.configure(image='')
+        listing.bind('<<ListboxSelect>>',show)
+        row=Frame(dialog);row.pack(fill='x',padx=10,pady=10)
+        for title,command in (('SAVE NEW',save),('LOAD',load),('RENAME',rename),('DELETE',delete),('CLOSE',dialog.destroy)):
+            Button(row,text=title,command=command).pack(side='left',fill='x',expand=True,padx=2)
+        refresh();apply_cinematic_theme(dialog);_center_dialog(dialog,self.window,680,560)
+
     def confirm_photo_boundary(self):
         test={"boxes":self.boxes}
         try:confirm_photo(test)
@@ -1315,7 +1365,8 @@ class BatchReview:
         preview_tabs=(("BACK  [B]","back"),) if mode=="a4back" else (("FRONT  [F]","front"),) if mode=="a4" else (("FRONT  [F]","front"),("BACK  [B]","back"),("PHOTO  [P]","photo"))
         for name,key in preview_tabs:
             button=Button(tabs,text=name,command=lambda value=key:self.select_preview_tab(value));button.pack(side="left",fill="x",expand=True,padx=2);self.preview_tab_buttons[key]=button
-        self.main_preview_label=Label(side,bg="#202a39",bd=3,relief="groove");self.main_preview_label.pack(fill="both",expand=True,pady=(0,5))
+        preview_holder=Frame(side,height=1,bg=THEME["panel"]);preview_holder.pack(fill="both",expand=True,pady=(0,5));preview_holder.pack_propagate(False)
+        self.main_preview_label=Label(preview_holder,bg="#202a39",bd=3,relief="groove");self.main_preview_label.pack(fill="both",expand=True)
         compact_nav=Frame(side,bg=THEME["panel"]);compact_nav.pack(fill="x",pady=(0,5))
         Button(compact_nav,text="FIRST",command=lambda:self.step(-len(self.items))).pack(side="left",padx=2)
         Button(compact_nav,text="◀ PREVIOUS",command=lambda:self.step(-1)).pack(side="left",fill="x",expand=True,padx=2)
@@ -1325,7 +1376,7 @@ class BatchReview:
         thumbnails=Frame(side,bg=THEME["panel"]);thumbnails.pack(fill="x");self.batch_preview_labels={}
         thumbnail_types=(("back",THEME["cyan"]),) if mode=="a4back" else (("front",THEME["red"]),) if mode=="a4" else (("front",THEME["red"]),("back",THEME["cyan"]),("photo",THEME["green"]))
         for name,color in thumbnail_types:
-            cell=Frame(thumbnails,bg=THEME["panel"]);cell.pack(side="left",fill="x",expand=True,padx=2);Label(cell,text=name.upper(),fg=color,font=("Segoe UI",9,"bold"),bg=THEME["panel"]).pack();label=Label(cell,bg="#20242b",bd=1,relief="groove",cursor="hand2",height=7);label.pack(fill="x");label.bind("<Button-1>",lambda _event,value=name:self.select_preview_tab(value));self.batch_preview_labels[name]=label
+            cell=Frame(thumbnails,bg=THEME["panel"]);cell.pack(side="left",fill="x",expand=True,padx=2);Label(cell,text=name.upper(),fg=color,font=("Segoe UI",9,"bold"),bg=THEME["panel"]).pack();label=Label(cell,bg="#20242b",bd=1,relief="groove",cursor="hand2");label.pack(fill="x");label.bind("<Button-1>",lambda _event,value=name:self.select_preview_tab(value));self.batch_preview_labels[name]=label
         zoom=Frame(side,bg=THEME["panel"]);zoom.pack(fill="x",pady=6)
         for text,value in (("Fit",1.0),("100%",1.35),("Zoom +",.15),("Zoom −",-.15)):Button(zoom,text=text,command=lambda v=value,t=text:self.set_preview_zoom(v,t)).pack(side="left",fill="x",expand=True,padx=2)
         edit_button=Button(side,text="EDIT SELECTED CARD",command=self.edit);edit_button._cinematic_size=11;edit_button.pack(fill="x",pady=(2,0));self.selection_buttons.append(edit_button)
@@ -1341,9 +1392,18 @@ class BatchReview:
         Button(zoom_panel,text="FIT",command=lambda:self.set_page_zoom(100)).pack(fill="x",padx=4,pady=3)
         Label(zoom_panel,text="Ctrl + Mouse Wheel Se Zoom Karein",font=("Segoe UI",7,"bold"),fg=THEME["cyan"],bg=THEME["panel"],wraplength=64).pack(fill="x",padx=2,pady=5)
         self.canvas.bind("<Control-MouseWheel>",self.page_zoom_wheel);self.canvas.bind("<Button-1>",self.layout_down);self.canvas.bind("<B1-Motion>",self.layout_move);self.canvas.bind("<ButtonRelease-1>",self.layout_up)
-        self.photo=None;apply_cinematic_theme(self.window);self.window.bind("<Control-p>",lambda e:self.print_current());self.window.bind("<Control-z>",lambda e:self.layout_undo());self.window.bind("<Control-y>",lambda e:self.layout_redo());self.window.bind("f",lambda e:self.select_preview_tab("front"));self.window.bind("b",lambda e:self.select_preview_tab("back"));self.window.bind("p",lambda e:self.select_preview_tab("photo"));self.window.bind("<Left>",lambda e:self.step(-1));self.window.bind("<Right>",lambda e:self.step(1));self.window.bind("<Home>",lambda e:self.step(-len(self.items)));self.window.bind("<End>",lambda e:self.step(len(self.items)));self.window.protocol("WM_DELETE_WINDOW",self.go_home);self.draw()
+        self.photo=None;apply_cinematic_theme(self.window);self.window.bind("<Control-p>",lambda e:self.print_current());self.window.bind("<Control-z>",lambda e:self.layout_undo());self.window.bind("<Control-y>",lambda e:self.layout_redo());self.window.bind("f",lambda e:self.select_preview_tab("front"));self.window.bind("b",lambda e:self.select_preview_tab("back"));self.window.bind("p",lambda e:self.select_preview_tab("photo"));self.window.bind("<Left>",lambda e:self.step(-1));self.window.bind("<Right>",lambda e:self.step(1));self.window.bind("<Home>",lambda e:self.step(-len(self.items)));self.window.bind("<End>",lambda e:self.step(len(self.items)));self.window.protocol("WM_DELETE_WINDOW",self.go_home);self.draw();self.window.after(5000,self.checkpoint)
     def clear_selection(self):
         self.list.selection_clear(0,"end");self.has_selection=False;self.draw()
+    def checkpoint(self):
+        if not self.window.winfo_exists():return
+        if self.layout_dirty and not self.busy and not self.app.saving:
+            records=[]
+            for item in self.items:
+                record={key:item[key] for key in ('source_page','boxes','adjustments','rotate_back','rotate_back_4x6') if key in item}
+                record['path']=str(item['path']);records.append(record)
+            data=self.app.read_settings();data['recovery']={'mode':self.mode,'items':records};self.app.write_settings(data)
+        self.window.after(5000,self.checkpoint)
     def redetect_card(self,target):
         if not self.has_selection or self.busy:return
         item=self.items[self.index];self.busy=True
@@ -1641,6 +1701,7 @@ class BatchReview:
             if choice=="cancel":return
             if choice=="save":self.save();return
         if self._draw_after:self.window.after_cancel(self._draw_after);self._draw_after=None
+        data=self.app.read_settings();data.pop('recovery',None);self.app.write_settings(data)
         self.window.destroy();self.app.status.set(f"{PRODUCT_NAME} {APP_VERSION} • Select A Layout To Start.");show_maximized(self.app.root)
     def save(self):
         if self.review_blocked():return
@@ -1659,6 +1720,18 @@ class MahaIDApp:
     def __init__(self,root):
         self._ui_events=queue.Queue();self.root=root;root.after(30,self._poll_ui_events);self.last_print_image=None;self.loading=False;self.printing=False;self.saving=False
         self.export_dpi=600;self._detection_cache={};self.config_path=self.get_config_path()
+        self.log=logging.getLogger('maha.10.36')
+        if not self.log.handlers:
+            try:
+                self.config_path.parent.mkdir(parents=True,exist_ok=True)
+                handler=RotatingFileHandler(self.config_path.with_suffix('.log'),maxBytes=1024*1024,backupCount=2,encoding='utf-8')
+                self.log.addHandler(handler);self.log.setLevel(logging.WARNING)
+            except OSError:pass
+        root.report_callback_exception=lambda kind,error,tb:self.log.error('UI callback failed',exc_info=(kind,error,tb))
+        def close_log(event):
+            if event.widget is root:
+                for handler in list(self.log.handlers):handler.close();self.log.removeHandler(handler)
+        root.bind('<Destroy>',close_log,add='+')
         self.x_offset_mm,self.y_offset_mm=self.load_print_position()
         root.title(f"{PRODUCT_NAME} {APP_VERSION}");root.withdraw();full_screen(root);apply_window_icon(root)
         root.protocol("WM_DELETE_WINDOW",root.destroy)
@@ -1686,13 +1759,22 @@ class MahaIDApp:
         # Background fills the usable client area, while the approved Home artwork
         # lives in a centered aspect-safe container.  This prevents the SEEMA
         # DIGITAL header or bottom tiles being cropped at 125-200% Windows DPI.
-        safe_x=max(18,round(width*.025));safe_y=max(18,round(height*.025))
+        safe_x=0;safe_y=0
         usable_w=max(320,width-2*safe_x);usable_h=max(240,height-2*safe_y)
         self._premium_scale=min(usable_w/base.width,usable_h/base.height)
         scaled=(max(1,round(base.width*self._premium_scale)),max(1,round(base.height*self._premium_scale)))
         image=base.resize(scaled,Image.Resampling.LANCZOS);self._premium_offset=((width-scaled[0])//2,(height-scaled[1])//2)
         # Keep the supplied home artwork edge-to-edge behind the centered safe content.
-        background=base.resize((width,height),Image.Resampling.LANCZOS)
+        # Extend only the outermost artwork pixels into aspect-ratio margins;
+        # never duplicate the header, buttons or samples behind the content.
+        background=image.resize((width,height),Image.Resampling.LANCZOS)
+        ox,oy=self._premium_offset
+        if ox:
+            background.paste(image.crop((0,0,1,image.height)).resize((ox,height)),(0,0))
+            background.paste(image.crop((image.width-1,0,image.width,image.height)).resize((width-ox-image.width,height)),(ox+image.width,0))
+        if oy:
+            background.paste(image.crop((0,0,image.width,1)).resize((width,oy)),(0,0))
+            background.paste(image.crop((0,image.height-1,image.width,image.height)).resize((width,height-oy-image.height)),(0,oy+image.height))
         self.home_premium_photo=ImageTk.PhotoImage(background);self.home_premium_art=ImageTk.PhotoImage(image)
         self.home_canvas.delete("all");self.home_canvas.create_image(0,0,anchor="nw",image=self.home_premium_photo,tags="home_bg");self.home_canvas.create_image(self._premium_offset[0],self._premium_offset[1],anchor="nw",image=self.home_premium_art,tags="home");self._draw_premium_outline()
     def _premium_hit(self,x,y):
@@ -1715,7 +1797,29 @@ class MahaIDApp:
 
 
     def get_config_path(self):
-        base=Path(os.environ.get("APPDATA",APP_DIR))/"Seema Digital";return base/"Maha id settings 10.35.json"
+        base=Path(os.environ.get("APPDATA",APP_DIR))/"Seema Digital";return base/"Maha id settings 10.36.json"
+    def recover_session(self):
+        saved=self.read_settings().get('recovery')
+        if not saved or '--smoke-test' in sys.argv:return
+        if not messagebox.askyesno('Recover Unsaved Work','Previous session did not close normally. Recover the cards and applied edits?',parent=self.root):
+            data=self.read_settings();data.pop('recovery',None);self.write_settings(data);return
+        records=saved.get('items',[]);paths=list(dict.fromkeys(r['path'] for r in records))
+        def work():
+            items,errors=self.create_items(paths)
+            by_source={(r['path'],r.get('source_page',1)):r for r in records}
+            for item in items:
+                record=by_source.get((str(item['path']),item['source_page']))
+                if record:
+                    item.update({k:v for k,v in record.items() if k!='path'})
+                    item['boxes']={k:tuple(v) for k,v in item['boxes'].items()}
+                    item['front'],item['back'],item['photo']=processed_cards(item)
+            return items,errors
+        self.loading=True
+        def ready(result,error):
+            self.loading=False
+            if error:messagebox.showwarning('Recovery',str(error),parent=self.root);return
+            self.finish_loading(result[0],result[1],saved['mode'])
+        self.run_background(work,ready)
     def load_print_position(self):
         try:
             data=self.read_settings();return float(data.get("x_offset_mm",0)),float(data.get("y_offset_mm",0))
@@ -1782,7 +1886,9 @@ class MahaIDApp:
         stat=path.stat();key=(str(path.resolve()),stat.st_size,stat.st_mtime_ns);detected=self._detection_cache.get(key)
         if detected is None:
             detected=[]
-            for page_number,page in enumerate(render_source_pages(path,password),1):
+            def progress(number,total):
+                self.post_ui(lambda:self.status.set(f'{path.name} • Rendering page {number}/{total}'))
+            for page_number,page in enumerate(render_source_pages(path,password,cancel_event,progress),1):
                 if cancel_event and cancel_event.is_set():break
                 front_seed,back_seed=maha_seed(page);front=refine_card_box(page,front_seed);back=refine_card_box(page,back_seed)
                 photo,confidence=refine_photo_box_with_confidence(page,front)
@@ -1857,12 +1963,14 @@ class MahaIDApp:
         try:
             for _ in range(40):self._ui_events.get_nowait()()
         except queue.Empty:pass
+        except Exception:self.log.exception('Background completion failed')
         self.root.after(30,self._poll_ui_events)
     def run_background(self,work,done):
         events=queue.Queue()
         def worker():
             try:events.put((work(),None))
-            except Exception as exc:events.put((None,exc))
+            except Exception as exc:
+                self.log.exception('Background operation failed');events.put((None,exc))
         def poll():
             try:result,error=events.get_nowait()
             except queue.Empty:self.root.after(30,poll);return

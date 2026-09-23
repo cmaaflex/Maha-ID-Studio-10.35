@@ -93,12 +93,12 @@ def printer_capabilities(name):
         win32print.ClosePrinter(handle)
 
 
-def configured_device(name, paper, orientation):
+def configured_device(name, paper, orientation, driver_mode=None):
     import win32con, win32print, win32ui, win32gui
     handle = win32print.OpenPrinter(name)
     try:
         info = win32print.GetPrinter(handle, 2)
-        mode = info['pDevMode']
+        mode = driver_mode if driver_mode is not None else info['pDevMode']
         # The driver owns paper, orientation, margins, scaling and copies.  Keep
         # its current DEVMODE untouched so the application never changes the
         # printer's original Windows preferences behind the user's back.
@@ -111,10 +111,10 @@ def configured_device(name, paper, orientation):
         win32print.ClosePrinter(handle)
 
 
-def print_pages(pages, name, paper, orientation, correction=(1., 1.), validate_only=False):
+def print_pages(pages, name, paper, orientation, correction=(1., 1.), validate_only=False, driver_mode=None):
     import win32print
     from PIL import ImageWin
-    dc, device, status = configured_device(name, paper, orientation)
+    dc, device, status = configured_device(name, paper, orientation, driver_mode)
     started = False
     try:
         blocked = sum(getattr(win32print, k, 0) for k in
@@ -157,11 +157,11 @@ def print_dialog(app, parent, pages):
     paper_name = StringVar()
     orientation = StringVar(value='Portrait')
     summary = StringVar(value='Loading installed printers…')
-    state = {'papers': [], 'busy': False, 'correction': (1., 1.), 'generation': 0}
+    state = {'papers': [], 'busy': False, 'correction': (1., 1.), 'generation': 0, 'mode': None}
     controls = []
     for title, var in (('Printer', printer), ('Paper', paper_name), ('Orientation', orientation)):
         Label(body, text=title, anchor='w').pack(fill='x')
-        control = ttk.Combobox(body, textvariable=var, state='readonly')
+        control = ttk.Combobox(body, textvariable=var, state='readonly' if title=='Printer' else 'disabled')
         control.pack(fill='x', pady=(2, 8))
         controls.append(control)
     controls[2].configure(values=('Portrait', 'Landscape'))
@@ -206,8 +206,11 @@ def print_dialog(app, parent, pages):
                 summary.set(str(error))
                 return
             papers, mode = result
+            state['mode'] = mode
             state['papers'] = papers
             controls[1].configure(values=[f'{p.name} — {p.width_mm:g} × {p.height_mm:g} mm' for p in papers])
+            current = next((i for i,p in enumerate(papers) if p.code==mode.PaperSize),None)
+            if current is not None:controls[1].current(current)
             orientation.set('Landscape' if mode.Orientation == 2 else 'Portrait')
             update()
         app.run_background(lambda: printer_capabilities(name), ready)
@@ -246,21 +249,39 @@ def print_dialog(app, parent, pages):
                 finished(None, error)
                 return
             summary.set('Sending exact-size pages to the selected printer…')
-            app.run_background(lambda: print_pages(pages, name, chosen, direction, factors), finished)
+            if not messagebox.askyesno('Confirm Print',summary.get(),parent=dialog):
+                finished(None,InterruptedError('Print cancelled.'));return
+            app.run_background(lambda: print_pages(pages, name, chosen, direction, factors, driver_mode=state['mode']), finished)
         def finished(result, error):
             state['busy'] = False
             app.printing = False
-            for control in controls: control.configure(state='readonly')
+            for i,control in enumerate(controls): control.configure(state='readonly' if i==0 else 'disabled')
             update()
             if error:
                 messagebox.showwarning('Print Validation', str(error), parent=dialog)
             else:
                 messagebox.showinfo('Print Sent', f'{len(pages)} page(s) sent to {name}.', parent=dialog)
                 dialog.destroy()
-        app.run_background(lambda: print_pages(pages, name, chosen, direction, factors, True), validated)
+        app.run_background(lambda: print_pages(pages, name, chosen, direction, factors, True, state['mode']), validated)
 
     send.configure(command=submit)
-    Button(body, text='PRINTER DRIVER SETTINGS', command=lambda: open_windows_printer_properties(dialog, printer.get()) if printer.get() and not state['busy'] else None).pack(fill='x', pady=2)
+    def preferences():
+        if not printer.get() or state['busy']:return
+        import win32print,win32con
+        handle=win32print.OpenPrinter(printer.get())
+        try:
+            mode=win32print.GetPrinter(handle,2)['pDevMode']
+            accepted=win32print.DocumentProperties(dialog.winfo_id(),handle,printer.get(),mode,mode,win32con.DM_IN_BUFFER|win32con.DM_OUT_BUFFER|win32con.DM_IN_PROMPT)
+            if accepted!=1:return
+            state['mode']=mode
+            current=next((i for i,p in enumerate(state['papers']) if p.code==mode.PaperSize),None)
+            if current is None:
+                paper_name.set('');send.configure(state='disabled');return
+            controls[1].current(current)
+            orientation.set('Landscape' if mode.Orientation==2 else 'Portrait')
+            update()
+        finally:win32print.ClosePrinter(handle)
+    Button(body, text='PRINTER DRIVER SETTINGS', command=preferences).pack(fill='x', pady=2)
     Button(body, text='CALIBRATE PRINTER', command=calibrate).pack(fill='x', pady=2)
     Button(body, text='RESET CALIBRATION — 100%', command=lambda: calibrate(True)).pack(fill='x', pady=2)
     def close():

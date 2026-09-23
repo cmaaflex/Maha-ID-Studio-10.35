@@ -1,11 +1,11 @@
-"""SEEMA DIGITAL MAHA ID SOFTWARE 10.35 acceptance gates."""
+"""SEEMA DIGITAL MAHA ID SOFTWARE 10.36 acceptance gates."""
 from pathlib import Path
 import inspect, math, unittest
 from maha_id_studio import application as app
 ROOT=Path(__file__).resolve().parents[1]
 SOURCE=(ROOT/'maha_id_studio/application.py').read_text(encoding='utf-8')
 class Release1033Tests(unittest.TestCase):
-    def test_version(self): self.assertEqual(app.APP_VERSION,'10.35')
+    def test_version(self): self.assertEqual(app.APP_VERSION,'10.36')
     def test_exact_a4_grid_geometry(self):
         pos=app.a4_grid_positions(10)
         self.assertEqual(len(pos),10)

@@ -1,8 +1,8 @@
-SEEMA DIGITAL — MAHA ID SOFTWARE 10.35
+SEEMA DIGITAL — MAHA ID SOFTWARE 10.36
 ====================================
 
 INSTALLATION
-1. Run "MAHA ID SOFTWARE 10.35 Setup.exe".
+1. Run "MAHA ID SOFTWARE 10.36 Setup.exe".
 2. Keep the Desktop shortcut option selected and click Install.
 3. Open Maha ID Studio from Desktop or Start Menu.
 4. No BAT, VBS, Python or CMD file is required.
@@ -24,7 +24,7 @@ QUICK WORKFLOW
 
 IMPORTANT
 - Final card size is exactly 90 x 57 mm. JPG/PDF export uses maximum-quality 600 DPI rendering.
-- The standalone "MAHA ID SOFTWARE 10.35.exe" is portable and can run without installation.
+- The standalone "MAHA ID SOFTWARE 10.36.exe" is portable and can run without installation.
 - If Windows SmartScreen appears, click More info > Run anyway only when this file was received directly from SEEMA DIGITAL.
 
 SUPPORT

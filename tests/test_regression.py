@@ -145,10 +145,10 @@ class FeatureRegressionTests(unittest.TestCase):
         self.assertIn('--onefile', workflow)
         self.assertIn('--windowed', workflow)
         self.assertIn('--icon "assets/Seema_Digital_Print.ico"', workflow)
-        self.assertIn('Copy-Item "dist/MAHA ID SOFTWARE 10.35.exe"', workflow)
-        self.assertIn('MAHA ID SOFTWARE 10.35 Setup.exe', workflow)
+        self.assertIn('Copy-Item "dist/MAHA ID SOFTWARE 10.36.exe"', workflow)
+        self.assertIn('MAHA ID SOFTWARE 10.36 Setup.exe', workflow)
         self.assertIn('name: MAHA ID STUDIO', workflow)
-        self.assertIn("10.35.0", version_info)
+        self.assertIn("10.36.0", version_info)
         self.assertTrue((root / "release_files" / "HOW TO USE.txt").is_file())
         self.assertTrue((root / "release_files" / "PRINT SETTINGS.txt").is_file())
         self.assertTrue((root / "installer" / "Maha_ID_Studio.iss").is_file())
@@ -156,7 +156,7 @@ class FeatureRegressionTests(unittest.TestCase):
         remover=(root / "remover.py").read_text(encoding="utf-8")
         self.assertIn("Personal PDFs, photos, exported cards",remover)
         self.assertIn("engine.scan",remover)
-        self.assertIn('MAHA ID SOFTWARE 10.35 Remover.exe',workflow)
+        self.assertIn('MAHA ID SOFTWARE 10.36 Remover.exe',workflow)
         self.assertIn("SEEMA DIGITAL", version_info)
 
     def test_cinematic_navigation_and_large_ui_controls(self):
@@ -174,8 +174,10 @@ class FeatureRegressionTests(unittest.TestCase):
     def test_direct_windows_print_and_persistent_button_state(self):
         from maha_id_studio import printing
         source=Path(printing.__file__).read_text(encoding="utf-8")
-        for value in ("DM_PAPERSIZE","DM_ORIENTATION","StartPage","EndPage","placement_plan"):
+        for value in ("StartPage","EndPage","placement_plan"):
             self.assertIn(value,source)
+        self.assertNotIn('mode.PaperSize =',source)
+        self.assertNotRegex(source,r'mode\.Orientation\s*=(?!=)')
         self.assertNotIn("CreatePrinterDC",source)
 
     def test_printer_choice_busy_guard_and_collision_safe_exports(self):

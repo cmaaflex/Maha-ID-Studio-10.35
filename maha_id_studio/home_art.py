@@ -51,6 +51,8 @@ def compose_home(assets,modes):
                 sample=ImageOps.contain(back if is_back else front,(w,h),Image.Resampling.LANCZOS)
                 x=pb[0]+6+col*(w+4)+(w-sample.width)//2;y=pb[1]+6+row*(h+4)+(h-sample.height)//2
                 image.paste(sample,(x,y))
-        draw.rounded_rectangle(tb,radius=14,fill='#c91223')
+        draw.rounded_rectangle(tb,radius=14,fill='#850e20',outline='#ef8995',width=2)
+        draw.rounded_rectangle((tb[0]+3,tb[1]+3,tb[2]-3,tb[3]-6),radius=11,fill='#c91223')
+        draw.line((tb[0]+14,tb[1]+4,tb[2]-14,tb[1]+4),fill='#fa7584',width=2)
         text_fit(draw,title,tb,28);text_fit(draw,subtitle,sb,24)
     return image

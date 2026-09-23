@@ -76,7 +76,7 @@ class PrintingTests(unittest.TestCase):
         paper=pr.Paper(9,'A4',210,297)
         with patch.object(pr,'configured_device',return_value=(dc,device(),0)) as configure:
             with self.assertRaisesRegex(RuntimeError,'spool failed'):pr.print_pages([self.page],'Canon',paper,'Landscape')
-        configure.assert_called_once_with('Canon',paper,'Landscape')
+        configure.assert_called_once_with('Canon',paper,'Landscape',None)
         dc.AbortDoc.assert_called_once();dc.DeleteDC.assert_called_once()
 
 

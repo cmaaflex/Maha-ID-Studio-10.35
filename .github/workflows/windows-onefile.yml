@@ -5,7 +5,7 @@ permissions:
 
 on:
   push:
-    branches: [main]
+    branches: [main, release-10.36]
   workflow_dispatch:
 
 jobs:
@@ -28,7 +28,7 @@ jobs:
       - name: Build single executable
         run: >-
           python -m PyInstaller --noconfirm --clean --windowed --onefile
-          --name "MAHA ID SOFTWARE 10.35"
+          --name "MAHA ID SOFTWARE 10.36"
           --icon "assets/Seema_Digital_Print.ico"
           --add-data "assets;assets"
           --collect-all pymupdf
@@ -39,22 +39,22 @@ jobs:
       - name: Build safe remover executable
         run: >-
           python -m PyInstaller --noconfirm --clean --windowed --onefile
-          --name "MAHA ID SOFTWARE 10.35 Remover"
+          --name "MAHA ID SOFTWARE 10.36 Remover"
           --icon "assets/Seema_Digital_Print.ico"
           --version-file "windows_version_info.txt"
           remover.py
       - name: Smoke-test portable app startup
         shell: pwsh
         run: |
-          $process = Start-Process "dist/MAHA ID SOFTWARE 10.35.exe" -ArgumentList '--smoke-test', 'startup-ready.json' -PassThru -WindowStyle Hidden
+          $process = Start-Process "dist/MAHA ID SOFTWARE 10.36.exe" -ArgumentList '--smoke-test', 'startup-ready.json' -PassThru -WindowStyle Hidden
           if (-not $process.WaitForExit(60000)) { Stop-Process -Id $process.Id -Force; throw "Startup smoke test timed out" }
           if ($process.ExitCode -ne 0 -or -not (Test-Path startup-ready.json)) { throw "Portable startup smoke test failed" }
           $ready = Get-Content startup-ready.json -Raw | ConvertFrom-Json
-          if (-not $ready.ready -or $ready.version -ne '10.35') { throw "Invalid startup readiness report" }
+          if (-not $ready.ready -or $ready.version -ne '10.36') { throw "Invalid startup readiness report" }
       - name: Smoke-test remover startup
         shell: pwsh
         run: |
-          $process = Start-Process "dist/MAHA ID SOFTWARE 10.35 Remover.exe" -ArgumentList '--smoke-test', 'remover-ready.json' -PassThru -WindowStyle Hidden
+          $process = Start-Process "dist/MAHA ID SOFTWARE 10.36 Remover.exe" -ArgumentList '--smoke-test', 'remover-ready.json' -PassThru -WindowStyle Hidden
           if (-not $process.WaitForExit(60000)) { Stop-Process -Id $process.Id -Force; throw "Remover smoke timed out" }
           if ($process.ExitCode -ne 0 -or -not (Test-Path remover-ready.json)) { throw "Remover smoke failed" }
       - name: Prepare branded installer assets
@@ -92,15 +92,15 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force "customer_release/MAHA ID STUDIO" | Out-Null
-          Copy-Item "installer/output/MAHA ID SOFTWARE 10.35 Setup.exe" "customer_release/MAHA ID STUDIO/"
-          Copy-Item "dist/MAHA ID SOFTWARE 10.35.exe" "customer_release/MAHA ID STUDIO/"
-          Copy-Item "dist/MAHA ID SOFTWARE 10.35 Remover.exe" "customer_release/MAHA ID STUDIO/"
+          Copy-Item "installer/output/MAHA ID SOFTWARE 10.36 Setup.exe" "customer_release/MAHA ID STUDIO/"
+          Copy-Item "dist/MAHA ID SOFTWARE 10.36.exe" "customer_release/MAHA ID STUDIO/"
+          Copy-Item "dist/MAHA ID SOFTWARE 10.36 Remover.exe" "customer_release/MAHA ID STUDIO/"
           @'
-          MAHA ID SOFTWARE 10.35 — HOW TO USE
+          MAHA ID SOFTWARE 10.36 — HOW TO USE
           1. Run Setup.exe, or open the portable EXE.
-          2. Choose a layout and add files. No page or card is selected automatically.
+          2. Choose a layout and add files. The first card opens automatically.
           3. Review Front, Back and Photo. Re-detect or adjust the green photo boundary when required, then confirm it.
-          4. Choose any installed Windows printer, paper and orientation in Print.
+          4. Choose an installed Windows printer. Set paper/orientation in PRINTER DRIVER SETTINGS.
           5. Check the live summary and print only after validation passes.
           Final card size stays exactly 90 × 57 mm. An arrangement that does not fit is blocked instead of silently shrinking.
           '@ | Set-Content "customer_release/MAHA ID STUDIO/HOW TO USE.txt" -Encoding UTF8
@@ -114,17 +114,17 @@ jobs:
           '@ | Set-Content "customer_release/MAHA ID STUDIO/PRINT SETTINGS.txt" -Encoding UTF8
           Copy-Item "release_files/Seema Digital Logo.png" "customer_release/MAHA ID STUDIO/"
           Copy-Item "release_files/Seema Digital Splash.jpg" "customer_release/MAHA ID STUDIO/"
-          $appHash = (Get-FileHash "dist/MAHA ID SOFTWARE 10.35.exe" -Algorithm SHA256).Hash
-          $setupHash = (Get-FileHash "installer/output/MAHA ID SOFTWARE 10.35 Setup.exe" -Algorithm SHA256).Hash
+          $appHash = (Get-FileHash "dist/MAHA ID SOFTWARE 10.36.exe" -Algorithm SHA256).Hash
+          $setupHash = (Get-FileHash "installer/output/MAHA ID SOFTWARE 10.36 Setup.exe" -Algorithm SHA256).Hash
           @"
-          SEEMA DIGITAL - MAHA ID SOFTWARE 10.35
+          SEEMA DIGITAL - MAHA ID SOFTWARE 10.36
           Windows 10/11 x64
 
           Maha ID Studio.exe SHA-256: $appHash
           Maha ID Studio Setup.exe SHA-256: $setupHash
           Build: Verified by automated Windows tests
           "@ | Set-Content "customer_release/MAHA ID STUDIO/VERSION AND CHECKSUM.txt" -Encoding UTF8
-          Compress-Archive -Path "customer_release/MAHA ID STUDIO" -DestinationPath "customer_release/MAHA ID SOFTWARE 10.35.zip" -CompressionLevel Optimal -Force
+          Compress-Archive -Path "customer_release/MAHA ID STUDIO" -DestinationPath "customer_release/MAHA ID SOFTWARE 10.36.zip" -CompressionLevel Optimal -Force
       - name: Upload professional customer release
         id: artifact_upload
         continue-on-error: true
@@ -133,19 +133,19 @@ jobs:
           name: MAHA ID STUDIO
           path: customer_release/MAHA ID STUDIO/
           if-no-files-found: error
-      - name: Publish final verified v10.35 release
+      - name: Publish final verified v10.36 release
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release view "v10.35" *> $null
+          gh release view "v10.36" *> $null
           if ($LASTEXITCODE -ne 0) {
-            gh release create "v10.35" --target "${{ github.sha }}" --title "MAHA ID SOFTWARE 10.35" --notes-file RELEASE_NOTES_10_35.md
+            gh release create "v10.36" --target "${{ github.sha }}" --title "MAHA ID SOFTWARE 10.36" --notes-file RELEASE_NOTES_10_36.md
             if ($LASTEXITCODE -ne 0) { throw "Release creation failed" }
           } else {
-            gh api "repos/${{ github.repository }}/git/refs/tags/v10.35" --method PATCH -f sha="${{ github.sha }}" -F force=true
+            gh api "repos/${{ github.repository }}/git/refs/tags/v10.36" --method PATCH -f sha="${{ github.sha }}" -F force=true
             if ($LASTEXITCODE -ne 0) { throw "Release tag update failed" }
-            gh release edit "v10.35" --notes-file RELEASE_NOTES_10_35.md
+            gh release edit "v10.36" --notes-file RELEASE_NOTES_10_36.md
           }
-          gh release upload "v10.35" "customer_release/MAHA ID SOFTWARE 10.35.zip" "dist/MAHA ID SOFTWARE 10.35.exe" "dist/MAHA ID SOFTWARE 10.35 Remover.exe" "installer/output/MAHA ID SOFTWARE 10.35 Setup.exe" --clobber
+          gh release upload "v10.36" "customer_release/MAHA ID SOFTWARE 10.36.zip" "dist/MAHA ID SOFTWARE 10.36.exe" "dist/MAHA ID SOFTWARE 10.36 Remover.exe" "installer/output/MAHA ID SOFTWARE 10.36 Setup.exe" --clobber
           if ($LASTEXITCODE -ne 0) { throw "Release publication failed" }
